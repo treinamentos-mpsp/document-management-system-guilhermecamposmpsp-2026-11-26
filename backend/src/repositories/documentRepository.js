@@ -1,5 +1,3 @@
-const fs = require('node:fs/promises');
-
 const documents = new Map();
 
 function save(document) {
@@ -18,8 +16,4 @@ function deleteById(id) {
   return documents.delete(id);
 }
 
-async function removeFile(filePath) {
-  await fs.unlink(filePath);
-}
-
-module.exports = { save, findAll, findById, deleteById, removeFile };
+module.exports = { save, findAll, findById, deleteById };
