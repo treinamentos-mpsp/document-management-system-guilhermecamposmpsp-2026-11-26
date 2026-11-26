@@ -31,6 +31,10 @@ test('faz upload, lista e baixa um documento', async (context) => {
     }
   });
 
+  const emptyListResponse = await fetch(`${baseUrl}/documents`);
+  assert.strictEqual(emptyListResponse.status, 200);
+  assert.deepStrictEqual(await emptyListResponse.json(), { documents: [] });
+
   const form = new FormData();
   form.append('file', new Blob(['document contents'], { type: 'application/pdf' }), 'report.pdf');
   const uploadResponse = await fetch(`${baseUrl}/upload`, { method: 'POST', body: form });
@@ -41,15 +45,18 @@ test('faz upload, lista e baixa um documento', async (context) => {
   assert.deepStrictEqual(Object.keys(uploadedDocument).sort(), ['id', 'originalName', 'owner', 'size', 'uploadedAt']);
   assert.strictEqual(uploadedDocument.originalName, 'report.pdf');
   assert.strictEqual(uploadedDocument.owner, 'demo-user');
+  assert.strictEqual(uploadedDocument.size, Buffer.byteLength('document contents'));
+  assert.ok(!Number.isNaN(Date.parse(uploadedDocument.uploadedAt)));
 
   const listResponse = await fetch(`${baseUrl}/documents`);
   assert.strictEqual(listResponse.status, 200);
   const listedDocuments = await listResponse.json();
   assert.strictEqual(listedDocuments.documents.length, 1);
-  assert.strictEqual(listedDocuments.documents[0].id, uploadedId);
+  assert.deepStrictEqual(listedDocuments.documents[0], uploadedDocument);
 
   const downloadResponse = await fetch(`${baseUrl}/documents/${uploadedId}/download`);
   assert.strictEqual(downloadResponse.status, 200);
+  assert.match(downloadResponse.headers.get('content-type'), /^application\/pdf/);
   assert.match(downloadResponse.headers.get('content-disposition'), /filename="report\.pdf"/);
   assert.strictEqual(await downloadResponse.text(), 'document contents');
 });
